@@ -100,6 +100,21 @@ public class PhysicsSystem {
         
         Vector2 pos = transform.getPosition();
         Vector2 velocity = physics.getVelocity();
+
+        String ownerName = physics.getOwner().getName();
+        // 子弹飞出屏幕后销毁
+        if (ownerName.equals("Bullet")) {
+            if (pos.x < -10 || pos.x > 1930 || pos.y < -10 || pos.y > 1090) {
+                physics.getOwner().setActive(false);
+                return;
+            }
+            return; // 子弹不反弹
+        }
+
+        // 追踪型敌人不受边界反弹影响
+        if ("Enemy".equals(ownerName)) {
+            return;
+        }
         
         boolean velocityChanged = false;
         float velX = velocity.x;

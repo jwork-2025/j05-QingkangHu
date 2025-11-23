@@ -40,6 +40,44 @@ public final class EntityFactory {
         rc.setRenderer(renderer);
         return obj;
     }
+
+    /**
+     * 创建一个用于回放的敌人视觉对象。
+     * @param renderer 渲染器实例
+     * @param width 宽度
+     * @param height 高度
+     * @param r 红色分量
+     * @param g 绿色分量
+     * @param b 蓝色分量
+     * @param a 透明度分量
+     * @return 配置好的 GameObject
+     */
+    public static GameObject createEnemyVisual(IRenderer renderer, float width, float height, float r, float g, float b, float a) {
+        GameObject enemyVisual = new GameObject("Enemy");
+        enemyVisual.addComponent(new TransformComponent(new Vector2(0, 0)));
+        RenderComponent rc = enemyVisual.addComponent(new RenderComponent(
+                RenderComponent.RenderType.RECTANGLE,
+                new Vector2(width, height),
+                new RenderComponent.Color(r, g, b, a)
+        ));
+        rc.setRenderer(renderer);
+        return enemyVisual;
+    }
+
+    public static GameObject createBulletVisual(IRenderer renderer, float width, float height, float r, float g, float b, float a) {
+        GameObject bulletVisual = new GameObject("Bullet");
+        bulletVisual.addComponent(new TransformComponent());
+        RenderComponent rc = bulletVisual.addComponent(new RenderComponent(
+                RenderComponent.RenderType.RECTANGLE,
+                new Vector2(width, height),
+                new RenderComponent.Color(r, g, b, a)
+        ));
+        rc.setRenderer(renderer);
+        bulletVisual.addComponent(rc);
+
+
+        return bulletVisual;
+    }
 }
 
 

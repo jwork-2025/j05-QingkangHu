@@ -4,6 +4,7 @@ import com.gameengine.graphics.IRenderer;
 import com.gameengine.graphics.RenderBackend;
 import com.gameengine.graphics.RendererFactory;
 import com.gameengine.input.InputManager;
+import com.gameengine.recording.RecordingService;
 import com.gameengine.scene.Scene;
 
 
@@ -215,5 +216,9 @@ public class GameEngine {
     
     public boolean isRunning() {
         return running;
+    }
+
+    public RecordingService getRecordingService() {
+        return this.recordingService;
     }
 }

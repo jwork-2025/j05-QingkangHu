@@ -1,6 +1,16 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/iHSjCEgj)
 # J05
 
+
+
+
+
+
+
+---
+
+---
+
 本版本采用 LWJGL + OpenGL 实现纯 GPU 渲染，窗口与输入基于 GLFW，文本渲染通过 AWT 字体离屏生成纹理后在 OpenGL 中批量绘制。
 
 
@@ -46,7 +56,7 @@
 ## 作业要求
 
 - 参考本仓库代码，完善你自己的游戏：
- 
+
 - 为你的游戏设计并实现“存档与回放”功能：
   - 存档：定义存储抽象（文件/网络/内存均可），录制关键帧 + 输入/事件
   - 回放：读取存档，恢复对象状态并插值渲染，保证外观与行为可见且稳定

@@ -1,8 +1,6 @@
 package com.gameengine.example;
 
-import com.gameengine.components.PhysicsComponent;
-import com.gameengine.components.RenderComponent;
-import com.gameengine.components.TransformComponent;
+import com.gameengine.components.*;
 import com.gameengine.core.GameEngine;
 import com.gameengine.core.GameLogic;
 import com.gameengine.core.GameObject;
@@ -11,6 +9,7 @@ import com.gameengine.graphics.IRenderer;
 import com.gameengine.math.Vector2;
 import com.gameengine.scene.Scene;
 
+import java.awt.image.BufferedImage;
 import java.util.*;
 
 public class GameScene extends Scene {
@@ -27,6 +26,17 @@ public class GameScene extends Scene {
     private float freezeTimer;
     private final float inputCooldown = 0.25f;
     private final float freezeDelay = 0.20f;
+
+    // 背景图
+    private BufferedImage backgroundImage;
+    // Player 精灵
+    private BufferedImage playerSprite;
+    private static final int PLAYER_W = 100;
+    private static final int PLAYER_H = 100;
+    // Enemy 精灵
+    private BufferedImage enemySprite;
+    private static final int ENEMY_W = 40;
+    private static final int ENEMY_H = 40;
 
     public GameScene(GameEngine engine) {
         super("GameScene");
@@ -46,7 +56,7 @@ public class GameScene extends Scene {
         this.freezeTimer = 0f;
 
         createPlayer();
-        createAIPlayers();
+        createEnemies(10);
         createDecorations();
 
         collisionParticles = new ArrayList<>();
@@ -54,7 +64,12 @@ public class GameScene extends Scene {
 
         playerParticles = new ParticleSystem(renderer, new Vector2(renderer.getWidth() / 2.0f, renderer.getHeight() / 2.0f));
         playerParticles.setActive(true);
-        
+
+        // 创建一个专门用于显示UI的GameObject
+        GameObject uiManager = new GameObject("UIManager");
+        uiManager.addComponent(new GameStatsUIComponent(renderer, gameLogic, engine));
+        this.addGameObject(uiManager);
+
     }
 
     @Override
@@ -62,12 +77,13 @@ public class GameScene extends Scene {
         super.update(deltaTime);
         time += deltaTime;
 
+        // 使用游戏逻辑类处理游戏规则
+        gameLogic.update(deltaTime);
         gameLogic.handlePlayerInput(deltaTime);
-        gameLogic.handleAIPlayerMovement(deltaTime);
-        gameLogic.handleAIPlayerAvoidance(deltaTime);
 
         boolean wasGameOver = gameLogic.isGameOver();
         gameLogic.checkCollisions();
+        gameLogic.checkBulletCollisions();
 
         if (gameLogic.isGameOver() && !wasGameOver) {
             GameObject player = gameLogic.getUserPlayer();
@@ -111,9 +127,10 @@ public class GameScene extends Scene {
             engine.setScene(menu);
             return;
         }
-
+        
         if (time >= 1.0f) {
-            createAIPlayer();
+            createEnemy();
+//            createAIPlayer();
             time = 0;
         }
     }
@@ -133,21 +150,21 @@ public class GameScene extends Scene {
             playerParticles.update(deltaTime);
         }
 
-        List<GameObject> aiPlayers = gameLogic.getAIPlayers();
+        List<GameObject> enemies = gameLogic.getEnemies();
         if (!freeze) {
-            for (GameObject aiPlayer : aiPlayers) {
-                if (aiPlayer != null && aiPlayer.isActive()) {
-                    ParticleSystem particles = aiPlayerParticles.get(aiPlayer);
+            for (GameObject enemy : enemies) {
+                if (enemy != null && enemy.isActive()) {
+                    ParticleSystem particles = aiPlayerParticles.get(enemy);
                     if (particles == null) {
-                        TransformComponent transform = aiPlayer.getComponent(TransformComponent.class);
+                        TransformComponent transform = enemy.getComponent(TransformComponent.class);
                         if (transform != null) {
                             particles = new ParticleSystem(renderer, transform.getPosition(), ParticleSystem.Config.light());
                             particles.setActive(true);
-                            aiPlayerParticles.put(aiPlayer, particles);
+                            aiPlayerParticles.put(enemy, particles);
                         }
                     }
                     if (particles != null) {
-                        TransformComponent transform = aiPlayer.getComponent(TransformComponent.class);
+                        TransformComponent transform = enemy.getComponent(TransformComponent.class);
                         if (transform != null) {
                             particles.setPosition(transform.getPosition());
                         }
@@ -159,7 +176,7 @@ public class GameScene extends Scene {
 
         List<GameObject> toRemove = new ArrayList<>();
         for (Map.Entry<GameObject, ParticleSystem> entry : aiPlayerParticles.entrySet()) {
-            if (!entry.getKey().isActive() || !aiPlayers.contains(entry.getKey())) {
+            if (!entry.getKey().isActive() || !enemies.contains(entry.getKey())) {
                 toRemove.add(entry.getKey());
             }
         }
@@ -243,23 +260,23 @@ public class GameScene extends Scene {
                 if (basePosition == null) return;
 
                 renderer.drawRect(
-                    basePosition.x - 8, basePosition.y - 10, 16, 20,
-                    1.0f, 0.0f, 0.0f, 1.0f
+                        basePosition.x - 8, basePosition.y - 10, 16, 20,
+                        1.0f, 0.0f, 0.0f, 1.0f
                 );
 
                 renderer.drawRect(
-                    basePosition.x - 6, basePosition.y - 22, 12, 12,
-                    1.0f, 0.5f, 0.0f, 1.0f
+                        basePosition.x - 6, basePosition.y - 22, 12, 12,
+                        1.0f, 0.5f, 0.0f, 1.0f
                 );
 
                 renderer.drawRect(
-                    basePosition.x - 13, basePosition.y - 5, 6, 12,
-                    1.0f, 0.8f, 0.0f, 1.0f
+                        basePosition.x - 13, basePosition.y - 5, 6, 12,
+                        1.0f, 0.8f, 0.0f, 1.0f
                 );
 
                 renderer.drawRect(
-                    basePosition.x + 7, basePosition.y - 5, 6, 12,
-                    0.0f, 1.0f, 0.0f, 1.0f
+                        basePosition.x + 7, basePosition.y - 5, 6, 12,
+                        0.0f, 1.0f, 0.0f, 1.0f
                 );
             }
         };
@@ -269,7 +286,63 @@ public class GameScene extends Scene {
         PhysicsComponent physics = player.addComponent(new PhysicsComponent(1.0f));
         physics.setFriction(0.95f);
 
+        player.addComponent(new HealthComponent(30));
+        player.addComponent(new HealthBarComponent(renderer));
+
         addGameObject(player);
+    }
+
+    private void createEnemies(int count) {
+        for (int i = 0; i < count; i++) {
+            createEnemy();
+        }
+    }
+
+    private void createEnemy() {
+        if (gameLogic != null) {
+            gameLogic.gameObjectFactory.createEnemy(
+                    100,    // health
+                    80f,   // speed
+                    new Vector2(ENEMY_W, ENEMY_H), // size
+                    enemySprite
+            );
+        }
+    }
+    private void createDecorations() {
+        for (int i = 0; i < 5; i++) {
+            createDecoration();
+        }
+    }
+
+    private void createDecoration() {
+        GameObject decoration = new GameObject("Decoration") {
+            @Override
+            public void update(float deltaTime) {
+                super.update(deltaTime);
+                updateComponents(deltaTime);
+            }
+
+            @Override
+            public void render() {
+                renderComponents();
+            }
+        };
+
+        Vector2 position = new Vector2(
+                random.nextFloat() * renderer.getWidth(),
+                random.nextFloat() * renderer.getHeight()
+        );
+
+        decoration.addComponent(new TransformComponent(position));
+
+        RenderComponent render = decoration.addComponent(new RenderComponent(
+                RenderComponent.RenderType.CIRCLE,
+                new Vector2(5, 5),
+                new RenderComponent.Color(0.5f, 0.5f, 1.0f, 0.8f)
+        ));
+        render.setRenderer(renderer);
+
+        addGameObject(decoration);
     }
 
     private void createAIPlayers() {
@@ -295,66 +368,30 @@ public class GameScene extends Scene {
         Vector2 position;
         do {
             position = new Vector2(
-                random.nextFloat() * renderer.getWidth(),
-                random.nextFloat() * renderer.getHeight()
+                    random.nextFloat() * renderer.getWidth(),
+                    random.nextFloat() * renderer.getHeight()
             );
         } while (position.distance(new Vector2(renderer.getWidth() / 2.0f, renderer.getHeight() / 2.0f)) < 100);
 
         aiPlayer.addComponent(new TransformComponent(position));
         // 使用工厂统一外观
         RenderComponent rc = aiPlayer.addComponent(new RenderComponent(
-            RenderComponent.RenderType.RECTANGLE,
-            new Vector2(20, 20),
-            new RenderComponent.Color(0.0f, 0.8f, 1.0f, 1.0f)
+                RenderComponent.RenderType.RECTANGLE,
+                new Vector2(20, 20),
+                new RenderComponent.Color(0.0f, 0.8f, 1.0f, 1.0f)
         ));
         rc.setRenderer(renderer);
 
         PhysicsComponent physics = aiPlayer.addComponent(new PhysicsComponent(0.5f));
         physics.setVelocity(new Vector2(
-            (random.nextFloat() - 0.5f) * 150,
-            (random.nextFloat() - 0.5f) * 150
+                (random.nextFloat() - 0.5f) * 150,
+                (random.nextFloat() - 0.5f) * 150
         ));
         physics.setFriction(0.98f);
 
         addGameObject(aiPlayer);
     }
 
-    private void createDecorations() {
-        for (int i = 0; i < 5; i++) {
-            createDecoration();
-        }
-    }
-
-    private void createDecoration() {
-        GameObject decoration = new GameObject("Decoration") {
-            @Override
-            public void update(float deltaTime) {
-                super.update(deltaTime);
-                updateComponents(deltaTime);
-            }
-
-            @Override
-            public void render() {
-                renderComponents();
-            }
-        };
-
-        Vector2 position = new Vector2(
-            random.nextFloat() * renderer.getWidth(),
-            random.nextFloat() * renderer.getHeight()
-        );
-
-        decoration.addComponent(new TransformComponent(position));
-
-        RenderComponent render = decoration.addComponent(new RenderComponent(
-            RenderComponent.RenderType.CIRCLE,
-            new Vector2(5, 5),
-            new RenderComponent.Color(0.5f, 0.5f, 1.0f, 0.8f)
-        ));
-        render.setRenderer(renderer);
-
-        addGameObject(decoration);
-    }
 
     @Override
     public void clear() {
@@ -373,5 +410,3 @@ public class GameScene extends Scene {
         super.clear();
     }
 }
-
-

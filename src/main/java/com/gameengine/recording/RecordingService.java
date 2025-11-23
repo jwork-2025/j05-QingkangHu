@@ -111,6 +111,67 @@ public class RecordingService {
         }
     }
 
+    /**
+     * 记录一个一次性的事件，比如一个短暂实体的创建。
+     * @param obj 要记录的游戏对象。
+     */
+    public void recordEvent(GameObject obj) {
+        if (!recording || obj == null) return;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"type\":\"event\",\"t\":").append(qfmt.format(elapsed)).append(",\"entity\":");
+
+        TransformComponent tc = obj.getComponent(TransformComponent.class);
+        if (tc == null) return;
+
+        float x = tc.getPosition().x;
+        float y = tc.getPosition().y;
+
+        sb.append('{')
+                .append("\"id\":\"").append(obj.getName()).append("\",")
+                .append("\"x\":").append(qfmt.format(x)).append(',')
+                .append("\"y\":").append(qfmt.format(y));
+
+        com.gameengine.components.RenderComponent rc = obj.getComponent(com.gameengine.components.RenderComponent.class);
+        if (rc != null) {
+            com.gameengine.components.RenderComponent.RenderType rt = rc.getRenderType();
+            com.gameengine.math.Vector2 sz = rc.getSize();
+            com.gameengine.components.RenderComponent.Color col = rc.getColor();
+            sb.append(',')
+                    .append("\"rt\":\"").append(rt.name()).append("\",")
+                    .append("\"w\":").append(qfmt.format(sz.x)).append(',')
+                    .append("\"h\":").append(qfmt.format(sz.y)).append(',')
+                    .append("\"color\":[")
+                    .append(qfmt.format(col.r)).append(',')
+                    .append(qfmt.format(col.g)).append(',')
+                    .append(qfmt.format(col.b)).append(',')
+                    .append(qfmt.format(col.a)).append(']');
+        } else {
+            sb.append(',').append("\"rt\":\"CUSTOM\"");
+        }
+
+        sb.append('}');
+        sb.append("}");
+        enqueue(sb.toString());
+    }
+
+    /**
+     * 强制立即写入一个关键帧。
+     * 这对于记录那些由特定逻辑触发、而非按固定时间间隔发生的场景快照非常有用。
+     * @param scene 需要被记录为关键帧的当前场景。
+     * @return 如果成功写入关键帧，则返回 true。
+     */
+    public boolean forceKeyframe(Scene scene) {
+        if (!recording || scene == null) {
+            return false;
+        }
+        if (writeKeyframe(scene)) {
+            keyframeElapsed = 0.0; // 重置周期性关键帧的计时器
+            return true;
+        }
+        return false;
+    }
+
     private boolean writeKeyframe(Scene scene) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"type\":\"keyframe\",\"t\":").append(qfmt.format(elapsed)).append(",\"entities\":[");
