@@ -1,9 +1,19 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/iHSjCEgj)
 # J05
 
+运行视频见百度网盘链接:https://pan.baidu.com/s/1PDp795kunRdo6fMENdoO2Q?pwd=9emf 
 
+首先本次任务并未全部完成，因为有两个bug还没有解决。
 
+第一个是Enemy死亡之后，会使所有enemy顺序变换，再加上插值，导致敌人的位置异常变换。
 
+第二个是Bullet渲染异常，子弹射速过快的话可能记录不到，而且即使记录到了，由于bug导致无法渲染。
+
+总的来说感觉这次实验超出了我的能力范围，文件读入读出操作不难，但是一大堆没有注释的代码非常难读，而且改了一个地方其他地方也会跟着报错，中间在AI的建议下本来计划实现一个Event作为类似KeyFrame的机制，用于记录一些关键的时间，但是由于实在读不懂loadRecording方法的代码，没法成功还原记录的Event，因此注释掉了该部分代码。
+
+总体而言后续可能会自己实现一个建议的存储方法，例如不利用插值，而利用实时演算，虽然计算会有偏差，但是相比插值而言感觉可读性更高。
+
+限于时间有限，回放实现只完成了Enemy的移动记录。
 
 
 
